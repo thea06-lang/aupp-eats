@@ -1,0 +1,31 @@
+name: Run Tests
+
+# Trigger: run this workflow every time code is pushed to GitHub
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest  # GitHub spins up a fresh Linux machine for us
+
+    steps:
+      # 1. Check out the code from the repo
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Install Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # 3. Install dependencies (colorama)
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # 4. Run our test file
+      - name: Run tests
+        run: python test_aupp_eats.py
