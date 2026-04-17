@@ -1,0 +1,18 @@
+# Database file — personal data, don't push this
+*.db
+*.db-journal
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# VS Code settings
+.vscode/
+
+# Mac junk
+.DS_Store
+
+# Virtual environments (if you use one later)
+venv/
+env/
