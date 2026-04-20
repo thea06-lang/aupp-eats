@@ -8,7 +8,7 @@
 
 AUPP students eat on tight budgets. Between the canteen, event stalls, and outside vendors, it's easy to lose track of what you've spent on food throughout the day — and end up broke before dinner.
 
-AUPPeats solves that. Set your daily food budget, browse real meals from real campus spots, log what you eat, and always know exactly how much you have left.
+AUPPeats solves that. Enter your name, set your daily food budget, browse real meals from real campus spots, log what you eat, and always know exactly how much you have left.
 
 ---
 
@@ -17,9 +17,15 @@ AUPPeats solves that. Set your daily food budget, browse real meals from real ca
 ```
 ████████████████████████████████████████████████████
 █                                                  █
-█               🍜  AUPPeats                       █
+█               🍜  AUPPeats                      █
 █         Your campus meal budget tracker          █
 ████████████████████████████████████████████████████
+
+  Welcome to AUPPeats!
+  Before we start, what's your name?
+
+  Your name: Kunthea
+  Nice to meet you, Kunthea!
 
   ╔  BUDGET STATUS
 ────────────────────────────────────────────────────
@@ -43,13 +49,16 @@ AUPPeats solves that. Set your daily food budget, browse real meals from real ca
 
 ## Features
 
-- **Daily budget tracker** — set how much you want to spend, see it update in real time
+- **Personalized sessions** — asks for your name every launch, so anyone can use it
+- **Daily budget tracker** — set a fresh budget each session, see it update in real time
 - **Color-coded budget bar** — green when you're fine, yellow when it's getting low, red when you're close to the edge
 - **Meal browser** — filter by spot, category (Rice / Noodles / Snack / Drink), remaining budget, or keyword search
-- **Meal logger** — log what you ate with a single keypress; warns you before you go over budget
+- **Multi-meal logger** — log as many meals as you want in one go; enter 0 when done
+- **Over-budget warning** — warns you before logging a meal that exceeds your remaining budget
 - **Today's log** — see everything you've eaten today and remove mistakes
 - **Weekly summary** — full spending history from Monday to Sunday
 - **Favorites tracker** — tracks your most ordered meals over time
+- **Reset today** — wipe today's logs and budget from the budget screen to start fresh
 
 ---
 
@@ -57,7 +66,7 @@ AUPPeats solves that. Set your daily food budget, browse real meals from real ca
 
 | Layer      | Technology              |
 |------------|-------------------------|
-| Language   | Python 3                |
+| Language   | Python 3.14             |
 | Database   | SQLite 3 (via `sqlite3` built-in) |
 | Styling    | `colorama` for terminal colors |
 | Storage    | Local `.db` file        |
@@ -97,12 +106,12 @@ cd aupp-eats
 
 **2. Install dependencies**
 ```bash
-pip install -r requirements.txt
+py -3.14 -m pip install -r requirements.txt
 ```
 
 **3. Run the app**
 ```bash
-python main.py
+py -3.14 main.py
 ```
 
 That's it. The database is created and seeded automatically on first run.
@@ -112,10 +121,11 @@ That's it. The database is created and seeded automatically on first run.
 ## Database Schema
 
 ```
-food_spots   id | name | location | description
-meals        id | spot_id | name | price | category
-budget       id | daily_amount | set_date
-meal_logs    id | meal_id | log_date | price_paid
+food_spots    id | name | location | description
+meals         id | spot_id | name | price | category
+budget        id | daily_amount | set_date
+meal_logs     id | meal_id | log_date | price_paid
+user_profile  id | name
 ```
 
 `meals.spot_id` → `food_spots.id`  
@@ -130,6 +140,8 @@ meal_logs    id | meal_id | log_date | price_paid
 **Why a CLI instead of a GUI?** The terminal forces you to think clearly about data flow and user experience without relying on visual shortcuts. Every piece of information on screen has to earn its place.
 
 **Why separate models from display logic?** So the database queries stay reusable and testable, completely independent from how the output looks. Changing the UI never touches the data layer.
+
+**Why ask for name and budget every session?** AUPPeats is designed to be shared — anyone can pick it up and track their own spending without accounts or login.
 
 ---
 

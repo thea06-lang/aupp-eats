@@ -63,6 +63,15 @@ def initialize_db():
         )
     """)
 
+    # --- User Profile ---
+    # Stores the user's name (single row)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_profile (
+            id   INTEGER PRIMARY KEY CHECK (id = 1),
+            name TEXT NOT NULL
+        )
+    """)
+
     conn.commit()
     conn.close()
     print("Database initialized successfully.")

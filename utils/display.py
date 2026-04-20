@@ -29,8 +29,9 @@ def print_banner():
     print(Fore.CYAN + Style.BRIGHT + "█" * WIDTH)
     print(Fore.CYAN + Style.BRIGHT + "█" + " " * (WIDTH - 2) + "█")
     title = "🍜  AUPPeats"
-    padding = (WIDTH - 2 - len(title)) // 2
-    print(Fore.CYAN + Style.BRIGHT + "█" + " " * padding + title + " " * (WIDTH - 2 - padding - len(title)) + "█")
+    title_display_width = len(title) + 1  # emoji counts as 2 cols, len() returns 1
+    padding = (WIDTH - 2 - title_display_width) // 2
+    print(Fore.CYAN + Style.BRIGHT + "█" + " " * padding + title + " " * (WIDTH - 2 - padding - title_display_width) + "█")
     subtitle = "Your campus meal budget tracker"
     padding2 = (WIDTH - 2 - len(subtitle)) // 2
     print(Fore.WHITE + "█" + " " * padding2 + subtitle + " " * (WIDTH - 2 - padding2 - len(subtitle)) + "█")

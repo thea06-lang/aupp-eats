@@ -51,6 +51,30 @@ from colorama import Fore, Style
 
 
 # ─────────────────────────────────────────────
+#  User Profile Helpers
+# ─────────────────────────────────────────────
+
+def get_user_name():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT name FROM user_profile WHERE id = 1")
+    row = cursor.fetchone()
+    conn.close()
+    return row["name"] if row else None
+
+
+def set_user_name(name):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO user_profile (id, name) VALUES (1, ?)
+        ON CONFLICT(id) DO UPDATE SET name = excluded.name
+    """, (name,))
+    conn.commit()
+    conn.close()
+
+
+# ─────────────────────────────────────────────
 #  Budget Helpers
 # ─────────────────────────────────────────────
 
@@ -83,6 +107,31 @@ def set_budget(amount):
 # ─────────────────────────────────────────────
 #  Screens
 # ─────────────────────────────────────────────
+
+def reset_daily_data():
+    """Delete today's logs and budget so the user can start fresh."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM meal_logs WHERE log_date = ?", (today_str(),))
+    cursor.execute("DELETE FROM budget WHERE set_date = ?", (today_str(),))
+    conn.commit()
+    conn.close()
+
+
+def screen_setup_name():
+    """Ask for and save the user's name on first launch."""
+    print_header("Welcome to AUPPeats!")
+    print_info("Before we start, what's your name?")
+    print_blank()
+    while True:
+        name = input("  Your name: ").strip()
+        if name:
+            set_user_name(name)
+            print_success(f"Nice to meet you, {name}!")
+            press_enter_to_continue()
+            return
+        print_warning("Please enter your name.")
+
 
 def screen_setup_budget():
     """First-time budget setup screen."""
@@ -167,42 +216,37 @@ def screen_browse_meals(budget):
 
 
 def screen_log_meal(budget):
-    """Log a meal the user just ate."""
-    print_header("Log a Meal")
-
-    spent     = get_total_spent_on_date()
-    remaining = budget - spent
-    print_info(f"Remaining budget today: ${remaining:.2f}")
-    print_blank()
-
-    # Show all meals for the user to pick from
+    """Log one or more meals."""
     meals = get_all_meals()
-    print_meal_list(meals)
 
-    idx = get_int_input(f"Enter meal number to log (0 to cancel):", min_val=1, max_val=len(meals))
-    if not idx:
-        return
+    while True:
+        print_header("Log a Meal")
+        spent     = get_total_spent_on_date()
+        remaining = budget - spent
+        print_info(f"Remaining budget today: ${remaining:.2f}")
+        print_blank()
+        print_meal_list(meals)
 
-    meal = meals[idx - 1]
-    print_blank()
-    print_meal_detail(meal)
+        idx = get_int_input("Enter meal number to log (0 to done):", min_val=1, max_val=len(meals))
+        if not idx:
+            break
 
-    # Warn if over budget
-    if meal["price"] > remaining:
-        print_warning(f"This meal costs ${meal['price']:.2f} but you only have ${remaining:.2f} left!")
-        confirm = input(Fore.YELLOW + "  Log it anyway? (y/n): ").strip().lower()
-        if confirm != "y":
-            print_info("Cancelled.")
-            press_enter_to_continue()
-            return
+        meal = meals[idx - 1]
+        print_blank()
+        print_meal_detail(meal)
 
-    log_meal(meal["id"], meal["price"])
-    print_success(f"Logged: {meal['name']} — ${meal['price']:.2f}")
+        if meal["price"] > remaining:
+            print_warning(f"This meal costs ${meal['price']:.2f} but you only have ${remaining:.2f} left!")
+            confirm = input(Fore.YELLOW + "  Log it anyway? (y/n): ").strip().lower()
+            if confirm != "y":
+                print_info("Cancelled.")
+                continue
 
-    # Show updated budget
-    new_spent = get_total_spent_on_date()
-    print_budget_status(budget, new_spent)
-    press_enter_to_continue()
+        log_meal(meal["id"], meal["price"])
+        print_success(f"Logged: {meal['name']} — ${meal['price']:.2f}")
+        new_spent = get_total_spent_on_date()
+        print_budget_status(budget, new_spent)
+        print_blank()
 
 
 def screen_view_budget(budget):
@@ -217,9 +261,10 @@ def screen_view_budget(budget):
     print_menu("Budget Options", [
         "Update today's budget",
         "Remove a logged meal",
+        "Reset today (clear all logs & budget)",
         "Back",
     ])
-    choice = get_int_input("", min_val=1, max_val=3)
+    choice = get_int_input("", min_val=1, max_val=4)
 
     if choice == 1:
         amount = get_float_input("Enter new budget amount:", min_val=0.5)
@@ -243,6 +288,18 @@ def screen_view_budget(budget):
                 else:
                     print_error("Could not remove that entry.")
         press_enter_to_continue()
+
+    elif choice == 3:
+        print_warning("This will delete all of today's logs and budget. Are you sure?")
+        confirm = input("  Type YES to confirm: ").strip()
+        if confirm == "YES":
+            reset_daily_data()
+            print_success("Today's data has been reset. Set a new budget to continue.")
+            press_enter_to_continue()
+            return "reset"
+        else:
+            print_info("Reset cancelled.")
+            press_enter_to_continue()
 
     return budget
 
@@ -273,11 +330,14 @@ def main():
 
     print_banner()
 
-    # Budget check — set one if missing
+    # Ask for name every session
+    screen_setup_name()
+    name = get_user_name()
+
+    # Clear today's logs and budget, then ask fresh every session
+    reset_daily_data()
+    screen_setup_budget()
     budget = get_active_budget()
-    if not budget:
-        screen_setup_budget()
-        budget = get_active_budget()
 
     # Main app loop
     while True:
@@ -303,7 +363,10 @@ def main():
 
         elif choice == 3:
             updated = screen_view_budget(budget)
-            if updated:
+            if updated == "reset":
+                screen_setup_budget()
+                budget = get_active_budget()
+            elif updated:
                 budget = updated
 
         elif choice == 4:
@@ -314,7 +377,7 @@ def main():
 
         elif choice == 6 or choice is None:
             print_blank()
-            print(Fore.CYAN + Style.BRIGHT + "  See you next meal, Kunthea! 👋")
+            print(Fore.CYAN + Style.BRIGHT + f"  See you next meal, {name}! 👋")
             print_blank()
             sys.exit(0)
 
